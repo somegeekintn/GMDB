@@ -9,15 +9,15 @@
 import Foundation
 import SQLite3
 
-class GMStatement: NSObject {
-    var statement: OpaquePointer? = nil
-    var query: String = ""
-    var useCount: Int = 0
-    var inUse: Bool = false
+public class GMStatement: NSObject {
+    private(set) var statement: OpaquePointer? = nil
+    public internal(set) var query: String = ""
+    public internal(set) var useCount: Int = 0
+    public internal(set) var inUse: Bool = false
 
-    override var description: String { "\(useCount) hit(s) for query \(query)" }
+    public override var description: String { "\(useCount) hit(s) for query \(query)" }
 
-    init(statement: OpaquePointer? = nil) {
+    public init(statement: OpaquePointer? = nil) {
         self.statement = statement
     }
     
@@ -25,7 +25,7 @@ class GMStatement: NSObject {
         close()
     }
 
-    func close() {
+    public func close() {
         if let statement {
             sqlite3_finalize(statement)
         }
@@ -34,7 +34,7 @@ class GMStatement: NSObject {
         inUse = false
     }
 
-    func reset() {
+    public func reset() {
         if let statement {
             sqlite3_reset(statement)
         }

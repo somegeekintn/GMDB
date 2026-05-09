@@ -14,7 +14,7 @@ It's called GMDB for two reasons:
 - G comes after F
 - Gus Mueller wrote the original
 
-**Version 0.1** — consider this a starting point, not a finished product.
+**Version 0.1.1** — consider this a starting point, not a finished product.
 
 ## Known Limitations
 
@@ -30,7 +30,7 @@ Some things from FMDB aren't (yet) supported:
 Add GMDB to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/somegeekintn/GMDB", from: "0.1.0")
+.package(url: "https://github.com/somegeekintn/GMDB", from: "0.1.1")
 ```
 
 ## Credits

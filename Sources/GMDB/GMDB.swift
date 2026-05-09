@@ -11,18 +11,18 @@ import OSLog
 
 let gmdbLog = Logger(subsystem: "GMDB", category: "general")
 
-enum GMDBError: Error, Equatable {
+public enum GMDBError: Error, Equatable {
     case sql(Int32, String)
     case misconfigured
 
-    var localizedDescription: String {
+    public var localizedDescription: String {
         switch self {
         case let .sql(_, message):   message
         case .misconfigured:        "Database is misconfigured"
         }
     }
 
-    static func == (lhs: GMDBError, rhs: GMDBError) -> Bool {
+    public static func == (lhs: GMDBError, rhs: GMDBError) -> Bool {
         switch (lhs, rhs) {
             case let (.sql(lhsCode, _), .sql(rhsCode, _)):  lhsCode == rhsCode
             case (.misconfigured, .misconfigured):          true
@@ -31,7 +31,7 @@ enum GMDBError: Error, Equatable {
     }
 }
 
-typealias SQLFunction = (OpaquePointer?, Int32, [OpaquePointer?]) -> Void
+public typealias SQLFunction = (OpaquePointer?, Int32, [OpaquePointer?]) -> Void
 final class SQLFunctionBox {
     let block: SQLFunction
 
@@ -40,7 +40,7 @@ final class SQLFunctionBox {
     }
 }
 
-typealias ExecuteStatementsCallback = ([String: String]) -> Int32
+public typealias ExecuteStatementsCallback = ([String: String]) -> Int32
 final class ExecuteStatementsCallbackBox {
     let block: ExecuteStatementsCallback
     init(_ block: @escaping ExecuteStatementsCallback) {
@@ -48,14 +48,14 @@ final class ExecuteStatementsCallbackBox {
     }
 }
 
-enum GMDBCheckpointMode: Int32 {
+public enum GMDBCheckpointMode: Int32 {
     case passive    = 0  // SQLITE_CHECKPOINT_PASSIVE
     case full       = 1  // SQLITE_CHECKPOINT_FULL
     case restart    = 2  // SQLITE_CHECKPOINT_RESTART
     case truncate   = 3  // SQLITE_CHECKPOINT_TRUNCATE
 }
 
-enum SQLiteValueType: Int32 {
+public enum SQLiteValueType: Int32 {
     case integer = 1  // SQLITE_INTEGER
     case float   = 2  // SQLITE_FLOAT
     case text    = 3  // SQLITE_TEXT

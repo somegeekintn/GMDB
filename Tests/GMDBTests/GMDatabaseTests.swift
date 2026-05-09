@@ -913,7 +913,7 @@ import SQLite3
     }
 
     @Test func userVersion() throws {
-        #expect(GMDatabase.GMDBUserVersion.compare("0.1", options: .numeric) == .orderedSame)
+        #expect(GMDatabase.GMDBUserVersion.compare("0.1.1", options: .numeric) == .orderedSame)
     }
 
     @Test func versionStringAboveRequired() throws {

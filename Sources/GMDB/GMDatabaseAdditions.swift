@@ -8,14 +8,14 @@
 
 import Foundation
 
-extension GMDatabase {
+public extension GMDatabase {
     enum Arguments {
         case array([Any?])
         case dictionary([String: Any?])
     }
 }
 
-extension GMDatabase {
+public extension GMDatabase {
     func result<T>(for query: String, fallback: T, sel: (GMResultSet, Int32) -> T, _ arguments: [Any?]) -> T {
         guard let resultSet = executeQuery(query, arguments) else { return fallback }
         guard resultSet.next() else { return fallback }

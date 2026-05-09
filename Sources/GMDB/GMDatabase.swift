@@ -11,48 +11,48 @@ import SQLite3
 
 let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-class GMDatabase {
+public class GMDatabase {
     private var db: OpaquePointer?
-    private(set) var databasePath: String?
+    public private(set) var databasePath: String?
     private var openResultSets = Set<GMResultSet>()
     private var openFunctions = [SQLFunctionBox]()
     private var cachedStatements: [String: Set<GMStatement>] = [:]
-    private(set) var dateFormat: DateFormatter?
+    public private(set) var dateFormat: DateFormatter?
 
-    private(set) var isOpen = false
-    private(set) var isExecutingStatement = false
-    private(set) var isInTransaction = false
+    public private(set) var isOpen = false
+    public private(set) var isExecutingStatement = false
+    public private(set) var isInTransaction = false
     private var crashOnErrors = false
-    private(set) var shouldCacheStatements = false
-    private(set) var maxBusyRetryTimeInterval: TimeInterval
+    public private(set) var shouldCacheStatements = false
+    public private(set) var maxBusyRetryTimeInterval: TimeInterval
     private var startBusyRetryTime: TimeInterval
 
-    var logsErrors = true
-    var traceExecution = false
+    public var logsErrors = true
+    public var traceExecution = false
 
-    static var GMDBUserVersion: String { "0.1" }
-    static var sqliteLibVersion: String { String(cString: sqlite3_libversion()) }
-    static var isSQLiteThreadSafe: Bool { sqlite3_threadsafe() != 0 }
+    public static var GMDBUserVersion: String { "0.1.1" }
+    public static var sqliteLibVersion: String { String(cString: sqlite3_libversion()) }
+    public static var isSQLiteThreadSafe: Bool { sqlite3_threadsafe() != 0 }
 
-    var databaseURL: URL? { databasePath.flatMap { URL(filePath: $0) } }
-    var sqliteHandle: OpaquePointer? { db }
-    var hasOpenResultSets: Bool { !openResultSets.isEmpty }
-    var hasDateFormatter: Bool { dateFormat != nil }
-    var lastErrorMessage: String { String(cString: sqlite3_errmsg(db)) }
-    var hadError: Bool { (SQLITE_ERROR...SQLITE_WARNING).contains(lastErrorCode) }
-    var lastErrorCode: Int32 { sqlite3_errcode(db) }
-    var lastExtendedErrorCode: Int32 { sqlite3_extended_errcode(db) }
-    var lastError: GMDBError { errorWith(message: lastErrorMessage) }
-    var inTransaction: Bool { isInTransaction }
-    var unsafeSelfPointer: UnsafeMutableRawPointer { unsafeBitCast(self, to: UnsafeMutableRawPointer.self) }
+    public var databaseURL: URL? { databasePath.flatMap { URL(filePath: $0) } }
+    public var sqliteHandle: OpaquePointer? { db }
+    public var hasOpenResultSets: Bool { !openResultSets.isEmpty }
+    public var hasDateFormatter: Bool { dateFormat != nil }
+    public var lastErrorMessage: String { String(cString: sqlite3_errmsg(db)) }
+    public var hadError: Bool { (SQLITE_ERROR...SQLITE_WARNING).contains(lastErrorCode) }
+    public var lastErrorCode: Int32 { sqlite3_errcode(db) }
+    public var lastExtendedErrorCode: Int32 { sqlite3_extended_errcode(db) }
+    public var lastError: GMDBError { errorWith(message: lastErrorMessage) }
+    public var inTransaction: Bool { isInTransaction }
+    public var unsafeSelfPointer: UnsafeMutableRawPointer { unsafeBitCast(self, to: UnsafeMutableRawPointer.self) }
 
-    var sqlitePath: String {
+    public var sqlitePath: String {
         guard let databasePath = databasePath as? NSString else { return ":memory:" }
 
         return databasePath.length == 0 ? "" : databasePath as String
     }
 
-    var databaseExists: Bool {
+    public var databaseExists: Bool {
         guard !isOpen else { return true }
 
         gmdbLog.warning("The GMDatabase \(String(describing: self)) is not open")
@@ -66,23 +66,23 @@ class GMDatabase {
         return false
     }
 
-    static func databaseWithPath(_ path: String) -> GMDatabase {
+    public static func databaseWithPath(_ path: String) -> GMDatabase {
         GMDatabase(path: path)
     }
 
-    static func databaseWithURL(_ url: URL) -> GMDatabase {
+    public static func databaseWithURL(_ url: URL) -> GMDatabase {
         GMDatabase(url: url)
     }
 
-    convenience init() {
+    public convenience init() {
         self.init(path: nil)
     }
 
-    convenience init(url: URL) {
+    public convenience init(url: URL) {
         self.init(path: url.path)
     }
 
-    init(path: String?) {
+    public init(path: String?) {
         assert(sqlite3_threadsafe() != 0); // whoa there big boy- gotta make sure sqlite it happy with what we're going to do.
 
         self.db = nil
@@ -91,12 +91,12 @@ class GMDatabase {
         self.startBusyRetryTime = 0
     }
 
-    func limit(for type: Int32, value newLimit: Int32) -> Int32 {
+    public func limit(for type: Int32, value newLimit: Int32) -> Int32 {
         return sqlite3_limit(db, type, newLimit)
     }
 
     @discardableResult
-    func open() -> Bool {
+    public func open() -> Bool {
         guard !isOpen else { return true }
 
         isOpen = true
@@ -123,7 +123,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func openWith(flags: Int32, vfs vfsName: String? = nil) -> Bool {
+    public func openWith(flags: Int32, vfs vfsName: String? = nil) -> Bool {
         // Note: assumes SQLITE_VERSION_NUMBER >= 3005000
         guard !isOpen else { return true }
 
@@ -150,7 +150,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func close() -> Bool {
+    public func close() -> Bool {
         clearCachedStatements()
         closeOpenResultSets()
 
@@ -208,7 +208,7 @@ class GMDatabase {
         }
     }
 
-    func setMaxBusyRetryTimeInterval(_ timeout: TimeInterval) {
+    public func setMaxBusyRetryTimeInterval(_ timeout: TimeInterval) {
         guard let db else { return }
 
         maxBusyRetryTimeInterval = timeout
@@ -222,7 +222,7 @@ class GMDatabase {
         }
     }
 
-    func closeOpenResultSets() {
+    public func closeOpenResultSets() {
         for rs in openResultSets {
             rs.parentDB = nil
             rs.close()
@@ -235,7 +235,7 @@ class GMDatabase {
         openResultSets.remove(resultSet)
     }
 
-    func clearCachedStatements() {
+    public func clearCachedStatements() {
         for statements in cachedStatements.values {
             for statement in statements {
                 statement.close()
@@ -266,15 +266,15 @@ class GMDatabase {
         return result
     }
 
-    func setDateFormat(_ format: DateFormatter) {
+    public func setDateFormat(_ format: DateFormatter) {
         dateFormat = format
     }
 
-    func stringFrom(date: Date) -> String {
+    public func stringFrom(date: Date) -> String {
         dateFormat?.string(from: date) ?? "\(date)"
     }
 
-    func goodConnection() -> Bool {
+    public func goodConnection() -> Bool {
         // SQLCIPHER_CRYPTO support? Only appears in podspec
         guard isOpen else { return false }
         guard let rs = executeQuery("select name from sqlite_master where type='table'") else { return false }
@@ -284,7 +284,7 @@ class GMDatabase {
         return true
     }
 
-    func warnInUse() {
+    public func warnInUse() {
         gmdbLog.warning("The GMDatabase \(String(describing: self)) is currently in use.")
 
 #if !NS_BLOCK_ASSERTIONS
@@ -298,7 +298,7 @@ class GMDatabase {
         .sql(sqlite3_errcode(db), message)
     }
 
-    func lastInsertRowId() -> sqlite_int64 {
+    public func lastInsertRowId() -> sqlite_int64 {
         guard !isExecutingStatement else { warnInUse(); return 0 }
         let result: sqlite_int64
 
@@ -309,7 +309,7 @@ class GMDatabase {
         return result
     }
 
-    func changes() -> Int32 {
+    public func changes() -> Int32 {
         guard !isExecutingStatement else { warnInUse(); return 0 }
         let result: Int32
 
@@ -320,7 +320,7 @@ class GMDatabase {
         return result
     }
 
-    func bindObject(obj: Any?, toColumn idx: Int32, inStatement pStmt: OpaquePointer) -> Int32 {
+    public func bindObject(obj: Any?, toColumn idx: Int32, inStatement pStmt: OpaquePointer) -> Int32 {
         guard let obj else { return sqlite3_bind_null(pStmt, idx) }
 
         // FIXME - someday check the return codes on these binds.
@@ -379,19 +379,19 @@ class GMDatabase {
 
     // - (void)extractSQL:(NSString *)sql argumentsList:(va_list)args … - Unsupported
 
-    func executeQuery(_ sql: String, dictionary arguments: [String: Any?]) -> GMResultSet? {
+    public func executeQuery(_ sql: String, dictionary arguments: [String: Any?]) -> GMResultSet? {
         executeQuery(sql, arguments: .dictionary(arguments), shouldBind: true)
     }
 
-    func executeQuery(_ sql: String, array arguments: [Any?]) -> GMResultSet? {
+    public func executeQuery(_ sql: String, array arguments: [Any?]) -> GMResultSet? {
         executeQuery(sql, arguments: .array(arguments), shouldBind: true)
     }
 
-    func executeQuery(_ sql: String, _ arguments: Any?...) -> GMResultSet? {
+    public func executeQuery(_ sql: String, _ arguments: Any?...) -> GMResultSet? {
         executeQuery(sql, arguments: .array(arguments), shouldBind: true)
     }
 
-    func executeQuery(_ sql: String, arguments: Arguments, shouldBind: Bool) -> GMResultSet? {
+    public func executeQuery(_ sql: String, arguments: Arguments, shouldBind: Bool) -> GMResultSet? {
         guard databaseExists else { return nil }
         guard !isExecutingStatement else { warnInUse(); return nil }
         var pStmt: OpaquePointer? = nil
@@ -464,7 +464,7 @@ class GMDatabase {
         return rs
     }
 
-    func bindStatement(pStmt: OpaquePointer, arguments: Arguments) -> Bool {
+    public func bindStatement(pStmt: OpaquePointer, arguments: Arguments) -> Bool {
         var idx = 0
         let queryCount = sqlite3_bind_parameter_count(pStmt) // pointed out by Dominic Yu (thanks!)
 
@@ -535,31 +535,31 @@ class GMDatabase {
     }
 
     @discardableResult
-    func executeUpdate(_ sql: String, arguments: Arguments) throws -> Bool {
+    public func executeUpdate(_ sql: String, arguments: Arguments) throws -> Bool {
         guard let rs = self.executeQuery(sql, arguments: arguments, shouldBind: true) else { throw lastError }
 
         return try rs.internalStep() == SQLITE_DONE
     }
 
     @discardableResult
-    func executeUpdate(_ sql: String, _ args: Any?...) throws -> Bool {
+    public func executeUpdate(_ sql: String, _ args: Any?...) throws -> Bool {
         try executeUpdate(sql, arguments: .array(args))
     }
 
     @discardableResult
-    func executeUpdate(_ sql: String, parameterArray arguments: [Any?]) throws -> Bool {
+    public func executeUpdate(_ sql: String, parameterArray arguments: [Any?]) throws -> Bool {
         try executeUpdate(sql, arguments: .array(arguments))
     }
 
     @discardableResult
-    func executeUpdate(_ sql: String, parameterDictionary arguments: [String: Any?]) throws -> Bool {
+    public func executeUpdate(_ sql: String, parameterDictionary arguments: [String: Any?]) throws -> Bool {
         try executeUpdate(sql, arguments: .dictionary(arguments))
     }
 
     // - (BOOL)executeUpdateWithFormat:(NSString*)format, - Unsupported
 
     @discardableResult
-    func executeUpdate(_ sql: String, withError err: inout Error?, _ args: Any?...) -> Bool {
+    public func executeUpdate(_ sql: String, withError err: inout Error?, _ args: Any?...) -> Bool {
         let result: Bool
 
         do {
@@ -573,7 +573,7 @@ class GMDatabase {
         return result
     }
 
-    func executeStatements(_ sql: String, withResultBlock block: ExecuteStatementsCallback? = nil) -> Bool {
+    public func executeStatements(_ sql: String, withResultBlock block: ExecuteStatementsCallback? = nil) -> Bool {
         var errmsg: UnsafeMutablePointer<CChar>? = nil
         let box = block.map { ExecuteStatementsCallbackBox($0) }
         let userData = box.map { Unmanaged.passUnretained($0).toOpaque() }
@@ -605,12 +605,12 @@ class GMDatabase {
         return rc == SQLITE_OK
     }
 
-    func prepare(_ sql: String) -> GMResultSet? {
+    public func prepare(_ sql: String) -> GMResultSet? {
         executeQuery(sql, arguments: .array([]), shouldBind: false)
     }
 
     @discardableResult
-    func rollback() throws -> Bool {
+    public func rollback() throws -> Bool {
         let b = try executeUpdate("rollback transaction")
 
         if b {
@@ -621,7 +621,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func commit() throws -> Bool {
+    public func commit() throws -> Bool {
         let b = try executeUpdate("commit transaction")
 
         if b {
@@ -632,7 +632,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func beginTransaction() throws -> Bool {
+    public func beginTransaction() throws -> Bool {
         let b = try executeUpdate("begin exclusive transaction")
 
         if b {
@@ -643,7 +643,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func beginDeferredTransaction() throws -> Bool {
+    public func beginDeferredTransaction() throws -> Bool {
         let b = try executeUpdate("begin deferred transaction")
 
         if b {
@@ -654,7 +654,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func beginImmediateTransaction() throws -> Bool {
+    public func beginImmediateTransaction() throws -> Bool {
         let b = try executeUpdate("begin immediate transaction")
 
         if b {
@@ -665,7 +665,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func beginExclusiveTransaction() throws -> Bool {
+    public func beginExclusiveTransaction() throws -> Bool {
         let b = try executeUpdate("begin exclusive transaction")
 
         if b {
@@ -675,7 +675,7 @@ class GMDatabase {
         return b
     }
 
-    func checkpoint(checkpointMode: GMDBCheckpointMode, name: String? = nil) throws -> Bool {
+    public func checkpoint(checkpointMode: GMDBCheckpointMode, name: String? = nil) throws -> Bool {
         var logFrameCount: Int32 = 0
         var checkpointCount: Int32 = 0
 
@@ -683,7 +683,7 @@ class GMDatabase {
     }
 
     @discardableResult
-    func checkpoint(checkpointMode: GMDBCheckpointMode, name: String? = nil, logFrameCount: inout Int32, checkpointCount: inout Int32) throws -> Bool {
+    public func checkpoint(checkpointMode: GMDBCheckpointMode, name: String? = nil, logFrameCount: inout Int32, checkpointCount: inout Int32) throws -> Bool {
         let err = sqlite3_wal_checkpoint_v2(db, name?.cString(using: .utf8), checkpointMode.rawValue, &logFrameCount, &checkpointCount)
 
         if err != SQLITE_OK {
@@ -703,7 +703,7 @@ class GMDatabase {
         }
     }
 
-    func setShouldCacheStatements(_ value: Bool) {
+    public func setShouldCacheStatements(_ value: Bool) {
         shouldCacheStatements = value
 
         if !shouldCacheStatements {
@@ -711,7 +711,7 @@ class GMDatabase {
         }
     }
 
-    func makeFunction(named name: String, arguments: Int32, block: @escaping SQLFunction) {
+    public func makeFunction(named name: String, arguments: Int32, block: @escaping SQLFunction) {
         let box = SQLFunctionBox(block)
         let opaqueBox = Unmanaged.passUnretained(box).toOpaque()
 
@@ -726,74 +726,74 @@ class GMDatabase {
         }, nil, nil)
     }
 
-    func valueType(_ value: OpaquePointer?) -> SQLiteValueType {
+    public func valueType(_ value: OpaquePointer?) -> SQLiteValueType {
         return SQLiteValueType(rawValue: sqlite3_value_type(value)) ?? .null
     }
 
-    func valueInt(_ value: OpaquePointer?) -> Int32 {
+    public func valueInt(_ value: OpaquePointer?) -> Int32 {
         return sqlite3_value_int(value)
     }
 
-    func valueLong(_ value: OpaquePointer?) -> Int64 {
+    public func valueLong(_ value: OpaquePointer?) -> Int64 {
         return sqlite3_value_int64(value)
     }
 
-    func valueDouble(_ value: OpaquePointer?) -> Double {
+    public func valueDouble(_ value: OpaquePointer?) -> Double {
         return sqlite3_value_double(value)
     }
 
-    func valueData(_ value: OpaquePointer?) -> Data? {
+    public func valueData(_ value: OpaquePointer?) -> Data? {
         guard let bytes = sqlite3_value_blob(value) else { return nil }
         let i8bufptr = UnsafeBufferPointer(start: bytes.assumingMemoryBound(to: UInt8.self), count: Int(sqlite3_value_bytes(value)))
 
         return Data(i8bufptr)
     }
 
-    func valueString(_ value: OpaquePointer?) -> String? {
+    public func valueString(_ value: OpaquePointer?) -> String? {
         guard let cString = sqlite3_value_text(value) else { return nil }
 
         return String(cString: cString)
     }
 
-    func resultNull(in context: OpaquePointer?) {
+    public func resultNull(in context: OpaquePointer?) {
         sqlite3_result_null(context)
     }
 
-    func resultInt(_ value: Int32, in context: OpaquePointer?) {
+    public func resultInt(_ value: Int32, in context: OpaquePointer?) {
         sqlite3_result_int(context, value)
     }
 
-    func resultLong(_ value: Int64, in context: OpaquePointer?) {
+    public func resultLong(_ value: Int64, in context: OpaquePointer?) {
         sqlite3_result_int64(context, value)
     }
 
-    func resultDouble(_ value: Double, in context: OpaquePointer?) {
+    public func resultDouble(_ value: Double, in context: OpaquePointer?) {
         sqlite3_result_double(context, value)
     }
 
-    func resultData(_ data: Data, in context: OpaquePointer?) {
+    public func resultData(_ data: Data, in context: OpaquePointer?) {
         data.withUnsafeBytes { bytes in
             sqlite3_result_blob(context, bytes.baseAddress, Int32(data.count), SQLITE_TRANSIENT)
         }
     }
 
-    func resultString(_ value: String, in context: OpaquePointer?) {
+    public func resultString(_ value: String, in context: OpaquePointer?) {
         sqlite3_result_text(context, value.cString(using: .utf8), -1, SQLITE_TRANSIENT)
     }
 
-    func resultError(_ error: String, in context: OpaquePointer?) {
+    public func resultError(_ error: String, in context: OpaquePointer?) {
         sqlite3_result_error(context, error.cString(using: .utf8), -1)
     }
 
-    func resultErrorCode(_ errorCode: Int32, in context: OpaquePointer?) {
+    public func resultErrorCode(_ errorCode: Int32, in context: OpaquePointer?) {
         sqlite3_result_error_code(context, errorCode)
     }
 
-    func resultErrorNoMemory(in context: OpaquePointer?) {
+    public func resultErrorNoMemory(in context: OpaquePointer?) {
         sqlite3_result_error_nomem(context)
     }
 
-    func resultErrorTooBig(in context: OpaquePointer?) {
+    public func resultErrorTooBig(in context: OpaquePointer?) {
         sqlite3_result_error_toobig(context)
     }
 }
